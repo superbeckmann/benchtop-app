@@ -1,0 +1,287 @@
+/* style.css — Bathroom Benchtop Hole Positioning */
+
+/* Base layout */
+body {
+  font-family: sans-serif;
+  padding: 20px;
+  background: #f9f9f9;
+  color: #222;
+  max-width: 1400px;
+  margin: auto;
+}
+
+h1 {
+  margin-bottom: 1rem;
+}
+
+h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Two-column layout */
+.layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.left-column {
+  flex: 0 0 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.right-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Panels */
+.panel {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 12px;
+  max-width: 360px;
+}
+
+/* Canvas */
+canvas {
+  border: 1px solid #ccc;
+  background: #fff;
+  display: block;
+  cursor: crosshair;
+}
+
+/* Form controls */
+label {
+  margin-right: 8px;
+  display: inline-block;
+}
+
+input,
+select {
+  margin-top: 6px;
+  display: inline-block;
+}
+
+input[type="number"] {
+  width: 100px;
+  margin-right: 10px;
+  padding: 4px;
+}
+
+select {
+  padding: 4px;
+}
+
+/* Inline form row layout */
+.form-row {
+  display: grid;
+  grid-template-columns: auto 100px auto 100px;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.form-row label {
+  font-weight: bold;
+  color: #333;
+  text-align: right;
+}
+
+.form-row input[type="range"] {
+  grid-column: span 2;
+  min-width: 150px;
+}
+
+.form-row input[type="checkbox"] {
+  margin-left: 4px;
+  transform: scale(1.2);
+}
+
+/* Stacked form layout (for Basin X/Y) */
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.stack-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stack-row label {
+  min-width: 100px;
+  font-weight: bold;
+}
+
+.stack-row input[type="number"] {
+  width: 100px;
+  padding: 4px;
+}
+
+
+/* Buttons */
+button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 3px;
+  background: #444;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+button:hover {
+  background: #666;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+/* Button styles by role */
+button.apply {
+  background: #2563eb;
+}
+
+button.reset {
+  background: #dc2626;
+}
+
+button.export {
+  background: #16a34a;
+}
+
+/* Layout helpers */
+.button-row {
+  display: flex;
+  justify-content: flex-start;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.inputs-grid {
+  display: grid;
+  grid-template-columns: auto auto auto auto;
+  gap: 8px 16px;
+  align-items: center;
+}
+
+.group {
+  margin-top: 10px;
+}
+
+.inline {
+  display: inline-block;
+  margin-right: 12px;
+}
+
+/* Report */
+.report {
+  white-space: pre-line;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* Placement button states */
+.btn-green {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn-green:hover {
+  background-color: #218838;
+}
+
+.btn-red {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-red:hover {
+  background-color: #c82333;
+}
+
+#lockBtn.active {
+  background-color: #4caf50;
+  color: white;
+}
+
+/* Hole group layout */
+.hole-group {
+  margin-bottom: 16px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 12px 16px;
+  background: #fefefe;
+}
+
+.hole-group legend {
+  font-weight: bold;
+  padding: 0 6px;
+  font-size: 1rem;
+}
+
+.input-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.input-row label {
+  min-width: 24px;
+  text-align: right;
+}
+
+.input-row input[type="number"] {
+  width: 100px;
+  padding: 4px;
+  margin-right: 4px;
+}
+
+.input-row button {
+  margin-left: auto;
+}
+
+/* Waste diameter dropdown */
+#wasteSize {
+  margin-top: 8px;
+  width: 120px;
+}
+
+/* Custom Basin Panel */
+.custom-basin-panel {
+  border: 1px solid #ccc;
+  padding: 16px;
+  max-width: 600px;
+  font-family: sans-serif;
+}
+
+.custom-basin-panel h3 {
+  margin-bottom: 12px;
+  font-size: 1.2em;
+}
+
+.max-label {
+  font-size: 0.9em;
+  color: #666;
+  margin-left: 8px;
+}
