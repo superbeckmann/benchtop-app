@@ -327,61 +327,72 @@ function drawRoundedRect(ctx, x, y, w, h, r) {
   ctx.quadraticCurveTo(x, y, x + r, y);
 }
 
-// ==============================
-// Cutout drawing
-// ==============================
 function drawCutout(c, x0, y0, widthPx) {
   const baseX = x0 + widthPx / 2;
   const baseY = y0;
 
+  // Decide which coordinates to use based on orientation
   let cx, cy, usedBranch;
-  if (selectedTapOrientation === '12' && c.pos12?.x != null && c.pos12?.y != null) {
+  if (selectedTapOrientation === '12' && Number.isFinite(c.pos12?.x) && Number.isFinite(c.pos12?.y)) {
     cx = baseX + mmToPx(c.pos12.x);
     cy = baseY + mmToPx(c.pos12.y);
     usedBranch = 'pos12';
-  } else if (selectedTapOrientation === '10' && c.pos10?.x != null && c.pos10?.y != null) {
+  } else if (selectedTapOrientation === '10' && Number.isFinite(c.pos10?.x) && Number.isFinite(c.pos10?.y)) {
     cx = baseX + mmToPx(c.pos10.x);
     cy = baseY + mmToPx(c.pos10.y);
     usedBranch = 'pos10';
-  } else if (selectedTapOrientation === '2' && c.pos2?.x != null && c.pos2?.y != null) {
+  } else if (selectedTapOrientation === '2' && Number.isFinite(c.pos2?.x) && Number.isFinite(c.pos2?.y)) {
     cx = baseX + mmToPx(c.pos2.x);
     cy = baseY + mmToPx(c.pos2.y);
     usedBranch = 'pos2';
   } else {
-    cx = baseX + mmToPx(c.offsetX ?? 0);
-    cy = baseY + mmToPx(c.offsetY ?? 0);
+    const genX = c.offsetX ?? c.c_x ?? c.cx ?? 0;
+    const genY = c.offsetY ?? c.c_y ?? c.cy ?? 0;
+    cx = baseX + mmToPx(genX);
+    cy = baseY + mmToPx(genY);
     usedBranch = 'generic';
   }
+
+  // ✅ Step 2: record actual placement for reporting
+const fromCenterMM = (cx - baseX) / mmToPx(1);
+const fromBackMM   = (cy - baseY) / mmToPx(1);
 
   BenchtopCanvas.state.cutoutPlacement = {
     orientation: selectedTapOrientation,
     branch: usedBranch,
     cxPx: cx,
     cyPx: cy,
-    fromCenterMM: (cx - baseX) / mmToPx(1),
-    fromBackMM: (cy - baseY) / mmToPx(1),
-    widthMM: c.width ?? null,
-    lengthMM: c.length ?? null,
-    diameterMM: c.diameter ?? null,
-    cornerRadiusMM: c.cornerRadius ?? null
+    fromCenterMM,
+    fromBackMM,
+    widthMM: Number.isFinite(c.width) ? c.width : null,
+    lengthMM: Number.isFinite(c.length) ? c.length : null,
+    diameterMM: (c.shape === 'circle' && Number.isFinite(c.length)) ? c.length : null,
+    cornerRadiusMM: Number.isFinite(c.cornerRadius) ? c.cornerRadius : null
   };
+
+  console.log('drawCutout placement:', BenchtopCanvas.state.cutoutPlacement);
 
   ctx.save();
   ctx.strokeStyle = 'orange';
   ctx.lineWidth = 2;
   ctx.setLineDash([6, 4]);
 
-  if (c.shape === 'circle' && Number.isFinite(c.diameter)) {
-    const rPx = mmToPx(c.diameter) / 2;
+  if (c.shape === 'circle' && Number.isFinite(c.length)) {
+    const rPx = mmToPx(c.length) / 2;
     ctx.beginPath();
     ctx.arc(cx, cy, rPx, 0, Math.PI * 2);
     ctx.stroke();
   } else if ((c.shape === 'square' || c.shape === 'rect') &&
-    Number.isFinite(c.width) && Number.isFinite(c.length)) {
+             Number.isFinite(c.width) && Number.isFinite(c.length)) {
     const wPx = mmToPx(c.width);
     const lPx = mmToPx(c.length);
-    ctx.beginPath();
-    ctx.strokeRect(cx - wPx / 2, cy - lPx / 2, wPx, lPx);
+    if (c.cornerRadius && c.cornerRadius > 0 && ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(cx - wPx / 2, cy - lPx / 2, wPx, lPx, mmToPx(c.cornerRadius));
+      ctx.stroke();
+    } else {
+      ctx.strokeRect(cx - wPx / 2, cy - lPx / 2, wPx, lPx);
+    }
   }
 
   ctx.restore();
