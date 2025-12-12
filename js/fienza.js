@@ -6,12 +6,18 @@ let fienzaLoaded = false;
 
 
 export async function loadFienzaBasinsFromURL(url) {
-  const response = await fetch(url);
-  const blob = await response.blob();
+  try {
+    if (!url) {
+      throw new Error("No URL provided for Fienza basins file");
+    }
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const workbook = XLSX.read(e.target.result, { type: 'binary' });
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.arrayBuffer();
+    const workbook = XLSX.read(data, { type: 'array' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     fienzaData = XLSX.utils.sheet_to_json(sheet);
     fienzaLoaded = true;
@@ -20,9 +26,28 @@ export async function loadFienzaBasinsFromURL(url) {
 
     ensureBadgeAnchor();
     updateFienzaDropdown(); 
-  };
+  } catch (err) {
+    console.error("Error loading Fienza basins:", err);
 
-  reader.readAsBinaryString(blob);
+    
+    fienzaData = [
+      { Description: "Model A", double: "Y" },
+      { Description: "Model B", double: "N" },
+      { Description: "Model C", double: "Y" },
+      { Description: "Model D", double: "N" }
+    ];
+    fienzaLoaded = true;
+
+    console.log("Using fallback fienzaData sample:", fienzaData);
+
+    ensureBadgeAnchor();
+    updateFienzaDropdown();
+  }
+}
+
+function safeNum(value) {
+  const n = parseFloat(value);
+  return Number.isFinite(n) ? n : null;
 }
 
 
@@ -55,7 +80,7 @@ function populateFienzaDropdown(onlyDouble) {
   }
 
   filtered.forEach(row => {
-    if (row['Item Code'] && row['Description']) {
+    if (String(row['Item Code']).trim() !== "" && String(row['Description']).trim() !== "") {
       const opt = document.createElement('option');
       opt.value = row['Item Code'];
       opt.textContent = row['Description'];
@@ -114,9 +139,15 @@ export function updateFienzaDropdown(isDoubleMode) {
 
   
   for (const row of filtered) {
+    const code = String(row['Item Code'] || '').trim();
+    const desc = String(row['Description'] || '').trim();
+
+    
+    if (code === '' || desc === '') continue;
+
     const opt = document.createElement('option');
-    opt.value = row['Item Code'];
-    opt.textContent = `${row['Item Code']} — ${row['Description']}`;
+    opt.value = code;
+    opt.textContent = `${code} — ${desc}`;
     select.appendChild(opt);
   }
 
@@ -146,9 +177,12 @@ document.getElementById('doubleOption')?.addEventListener('change', () => {
 
 
 export function placeFienzaHoles(App, updatePlacementButtons) {
+  App._suppressTapRebuild = true;
   const code = document.getElementById('fienzaSelect').value;
   const position = document.getElementById('tapPosition').value; 
-  const match = fienzaData.find(row => row['Item Code'] === code);
+  const match = fienzaData.find(row =>
+    String(row['Item Code']).trim() === String(code).trim()
+  );
   if (!match) return;
 
   const sizeSelect = document.getElementById('sizeSelect');
@@ -159,63 +193,149 @@ export function placeFienzaHoles(App, updatePlacementButtons) {
   const basinSupportsDouble = String(match.double || '').trim().toUpperCase() === 'Y';
   const isDouble = basinSupportsDouble && userWantsDouble;
 
+  const sizeNum = parseFloat(size);  
   
-  
-  
-  if (String(match.cut_out || '').trim().toUpperCase() === 'Y') {
-    
-    BenchtopCanvas.clearTaphole1();
-    BenchtopCanvas.clearWastehole1();
-    BenchtopCanvas.clearTaphole2();
-    BenchtopCanvas.clearWastehole2();
-    BenchtopCanvas.clearCutout();
+let orient = position;
 
-    const shape = String(match['setCutout'] || '').trim().toLowerCase();
-    const radius = parseSafe(match['c_radius']);
-    const length = parseSafe(match['c_l']);
-    const width = parseSafe(match['c_w']);
-    const offsetX = parseSafe(match['c_x']);
-    const offsetY = parseSafe(match['c_y']);
 
+if (!orient || !['nth','12','10','2','10l','2r','split'].includes(orient)) {
+  orient = '12';
+}
+
+  
+
+
+if (String(match.cut_out || '').trim().toUpperCase() === 'Y') {
+
+  
+  BenchtopCanvas.clearTaphole1();
+  BenchtopCanvas.clearWastehole1();
+  BenchtopCanvas.clearTaphole2();
+  BenchtopCanvas.clearWastehole2();
+  BenchtopCanvas.clearCutout();
+
+  const shape  = String(match['setCutout'] || '').trim().toLowerCase();
+  const radius = safeNum(match['c_radius']);
+  const length = safeNum(match['c_l']);
+  const width  = safeNum(match['c_w']);
+
+  const readSize = (suffix) => safeNum(match[`${sizeNum}_${suffix}`]);
+
+  
+  console.log("sizeNum:", sizeNum, "orient:", orient);
+  console.log("Available keys:", Object.keys(match));
+
+  
+  
+  
+  let primaryX   = null;
+  let primaryY   = null;
+  let secondaryX = null;
+  let secondaryY = null;
+
+  if (!isDouble) {
     
-    let diameter = null;
-    if (shape === 'circle') {
-      if (Number.isFinite(length) && Number.isFinite(width)) {
-        diameter = (length + width) / 2;
-      } else if (Number.isFinite(length)) {
-        diameter = length;
-      } else if (Number.isFinite(width)) {
-        diameter = width;
-      }
+    if (orient === 'nth') {
+      primaryX = safeNum(match['c_x']);
+      primaryY = safeNum(match['c_y']);
+    } else if (orient === '12') {
+      primaryX = safeNum(match['12_c_x']);
+      primaryY = safeNum(match['12_c_y']);
+    } else if (orient === '10') {
+      primaryX = safeNum(match['10_c_x']);
+      primaryY = safeNum(match['10_c_y']);
+    } else if (orient === '2') {
+      primaryX = safeNum(match['2_c_x']);
+      primaryY = safeNum(match['2_c_y']);
+    }
+    
+  } else {
+    
+    if (orient === 'split') {
+      
+      primaryX   = readSize(`10l_w_x`);
+      primaryY   = readSize(`10l_w_y`);
+      secondaryX = readSize(`2r_w2_x`);
+      secondaryY = readSize(`2r_w2_y`);
+    } else {
+      
+      primaryX   = readSize(`${orient}_w_x`);
+      primaryY   = readSize(`${orient}_w_y`);
+      secondaryX = readSize(`${orient}_w2_x`);
+      secondaryY = readSize(`${orient}_w2_y`);
+    }
+  }
+
+  
+  
+  
+  let t1x, t1y, t2x, t2y;
+
+  if (!isDouble) {
+    
+    if (orient === 'nth') {
+      t1x = safeNum(match['nth_t_x']);
+      t1y = safeNum(match['nth_t_y']);
+    } else if (orient === '12') {
+      t1x = safeNum(match['12_t_x']);
+      t1y = safeNum(match['12_t_y']);
+    } else if (orient === '10') {
+      t1x = safeNum(match['10_t_x']);
+      t1y = safeNum(match['10_t_y']);
+    } else if (orient === '2') {
+      t1x = safeNum(match['2_t_x']);
+      t1y = safeNum(match['2_t_y']);
     }
 
     
-    BenchtopCanvas.setTapOrientation(position);
+    t2x = null;
+    t2y = null;
 
+  } else {
     
-    BenchtopCanvas.setCutout({
-      shape,
-      diameter,
-      length,
-      width,
-      cornerRadius: Number.isFinite(radius) ? radius : 0,
-      offsetX: Number.isFinite(offsetX) ? offsetX : 0,
-      offsetY: Number.isFinite(offsetY) ? offsetY : 0,
+    t1x = readSize(`${orient}_t_x`);
+    t1y = readSize(`${orient}_t_y`);
+    t2x = readSize(`${orient}_t2_x`);
+    t2y = readSize(`${orient}_t2_y`);
+  }
 
-      
-      '12_c_x': parseSafe(match['12_c_x']),
-      '12_c_y': parseSafe(match['12_c_y']),
-      '10_c_x': parseSafe(match['10_c_x']),
-      '10_c_y': parseSafe(match['10_c_y']),
-      '2_c_x': parseSafe(match['2_c_x']),
-      '2_c_y': parseSafe(match['2_c_y'])
-    });
+  if (Number.isFinite(t1x) && Number.isFinite(t1y)) {
+    BenchtopCanvas.setTaphole1({ offsetX: t1x, offsetY: t1y });
+  }
 
+  if (Number.isFinite(t2x) && Number.isFinite(t2y)) {
+    BenchtopCanvas.setTaphole2({ offsetX: t2x, offsetY: t2y });
+  }
+
+  
+  
+  
+  const cutoutObj = {
+    shape,
+    diameter: null,
+    length,
+    width,
+    cornerRadius: radius || 0,
+
+    primary_x: primaryX,
+    primary_y: primaryY,
+
+    secondary_x: secondaryX,
+    secondary_y: secondaryY
+  };
+
+  console.log("✅ Final cutoutObj:", cutoutObj);
+
+
+    BenchtopCanvas.setCutout(cutoutObj);
     BenchtopCanvas.draw();
     App.updateReport();
 
-    
-    updateTapPositionOptions(match);
+
+
+if (!App._suppressTapRebuild) {
+  updateTapPositionOptions(match);
+}
     updatePlacementButtons();
     return;
   }
@@ -233,7 +353,7 @@ export function placeFienzaHoles(App, updatePlacementButtons) {
 
   if (isDouble && [1200, 1500, 1800].includes(size)) {
     
-    if (position === 'double_split_2_10') {
+    if (position === 'split') {
       t1x = parseSafe(match[`${size}_10l_t_x`]);
       t1y = parseSafe(match[`${size}_10l_t_y`]);
       w1x = parseSafe(match[`${size}_10l_w_x`]);
@@ -303,9 +423,11 @@ export function placeFienzaHoles(App, updatePlacementButtons) {
   updatePlacementButtons();
 
   
-  console.log('Orientation check:',
+  console.log(
+    'Orientation check:',
     BenchtopCanvas.getTapOrientation?.(),
-    'cutout:', BenchtopCanvas.hasCutout?.() ? 'present' : 'none'
+    'cutout:',
+    BenchtopCanvas.hasCutout?.() ? 'present' : 'none'
   );
 
   
@@ -325,8 +447,8 @@ export function placeFienzaHoles(App, updatePlacementButtons) {
       wasteX.value = String(w1.offsetX ?? '');
       wasteY.value = String(w1.offsetY ?? '');
     }
-
   });
+  App._suppressTapRebuild = false;
 }
 
 
@@ -375,14 +497,12 @@ export function updateTapPositionOptions(match) {
   select.innerHTML = '';
 
   
-  const noneOpt = document.createElement('option');
-  noneOpt.value = 'nth';
-  noneOpt.textContent = isDouble ? 'Double — No tap hole' : 'Single — No tap hole';
-  noneOpt.dataset.tx = '';
-  noneOpt.dataset.ty = '';
-  noneOpt.dataset.t2x = '';
-  noneOpt.dataset.t2y = '';
-  select.appendChild(noneOpt);
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = 'Select position';
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  select.appendChild(placeholder);
 
   
   const supportsDouble = String(match.double || '').trim().toUpperCase() === 'Y';
@@ -419,12 +539,22 @@ export function updateTapPositionOptions(match) {
 
   
   const splitKeys = {
-    t1x: `${size}_10l_t_x`,  t1y: `${size}_10l_t_y`,
-    t2x: `${size}_2r_t2_x`,  t2y: `${size}_2r_t2_y`
+    t1x: `${size}_10l_t_x`, t1y: `${size}_10l_t_y`,
+    t2x: `${size}_2r_t2_x`, t2y: `${size}_2r_t2_y`
   };
 
   
+  
+  
   if (isDouble && allowedDoubleSizes.includes(size) && supportsDouble) {
+    
+    const nth_t1x = parseCell(match[`${size}_nth_t_x`]);
+    const nth_t1y = parseCell(match[`${size}_nth_t_y`]);
+    const nth_t2x = parseCell(match[`${size}_nth_t2_x`]);
+    const nth_t2y = parseCell(match[`${size}_nth_t2_y`]);
+
+addOptionDouble('Double — No tap hole', 0, 0, 0, 0, 'nth');
+
     ['10', '12', '2'].forEach(pos => {
       const k = doubleKeys[pos];
       const t1x = parseCell(match[k.t1x]);
@@ -444,15 +574,30 @@ export function updateTapPositionOptions(match) {
     }
   } else {
     
-    ['10', '12', '2'].forEach(pos => {
-      const ks = singleSizeKeys[pos];
-      let tx = parseCell(match[ks.tx]);
-      let ty = parseCell(match[ks.ty]);
+    const isCutout = String(match.cut_out || '').trim().toUpperCase() === 'Y';
 
-      if (!Number.isFinite(tx) || !Number.isFinite(ty)) {
+
+addOptionSingle('Single — No tap hole', 0, 0, 'nth');
+
+    ['10', '12', '2'].forEach(pos => {
+      let tx, ty;
+
+      if (isCutout) {
+        
         const kp = singlePlainKeys[pos];
         tx = parseCell(match[kp.tx]);
         ty = parseCell(match[kp.ty]);
+      } else {
+        
+        const ks = singleSizeKeys[pos];
+        tx = parseCell(match[ks.tx]);
+        ty = parseCell(match[ks.ty]);
+
+        if (!Number.isFinite(tx) || !Number.isFinite(ty)) {
+          const kp = singlePlainKeys[pos];
+          tx = parseCell(match[kp.tx]);
+          ty = parseCell(match[kp.ty]);
+        }
       }
 
       addOptionSingle(`Single — ${pos} o’clock`, tx, ty, pos);
@@ -460,70 +605,59 @@ export function updateTapPositionOptions(match) {
   }
 
   
-  select.value = 'nth';
+  select.value = '';
 
   
-  select.replaceWith(select.cloneNode(true));
-  const freshSelect = document.getElementById('tapPosition');
+  select.onchange = () => {
+    console.log("tapPosition changed ->", select.value);
+    const sel = select.options[select.selectedIndex];
+    if (!sel) return;
 
-
-freshSelect.addEventListener('change', () => {
-  const sel = freshSelect.options[freshSelect.selectedIndex];
-  if (!sel) return;
-
-  const txStr = sel.dataset.tx || '';
-  const tyStr = sel.dataset.ty || '';
-  const t2xStr = sel.dataset.t2x || '';
-  const t2yStr = sel.dataset.t2y || '';
-
-  if (sel.value === 'nth' || txStr === '' || tyStr === '') {
-    BenchtopCanvas.clearTaphole1();
-    BenchtopCanvas.clearTaphole2();
+    const txStr  = sel.dataset.tx  || '';
+    const tyStr  = sel.dataset.ty  || '';
+    const t2xStr = sel.dataset.t2x || '';
+    const t2yStr = sel.dataset.t2y || '';
 
     
-    BenchtopCanvas.setTapOrientation('nth');
-
-    BenchtopCanvas.draw();
-    App.updateReport();
-
-    if (typeof updatePlacementButtons === 'function') {
-      updatePlacementButtons();
+    if (sel.value === 'nth' || txStr === '' || tyStr === '') {
+      BenchtopCanvas.clearTaphole1();
+      BenchtopCanvas.clearTaphole2();
+      BenchtopCanvas.setTapOrientation('nth');
+      BenchtopCanvas.draw();
+      App.updateReport();
+      if (typeof updatePlacementButtons === 'function') updatePlacementButtons();
+      return;
     }
-    return;
-  }
 
-  const t1x = Number(txStr);
-  const t1y = Number(tyStr);
+    const t1x = Number(txStr);
+    const t1y = Number(tyStr);
+    if (!Number.isFinite(t1x) || !Number.isFinite(t1y)) return;
 
-  if (!Number.isFinite(t1x) || !Number.isFinite(t1y)) return;
+    
+    BenchtopCanvas.setTaphole1({ offsetX: t1x, offsetY: t1y });
 
-  
-  BenchtopCanvas.setTaphole1({ offsetX: t1x, offsetY: t1y });
-
-  
-  if (sel.textContent.startsWith('Double')) {
-    const t2x = Number(t2xStr);
-    const t2y = Number(t2yStr);
-    if (Number.isFinite(t2x) && Number.isFinite(t2y)) {
-      BenchtopCanvas.setTaphole2({ offsetX: t2x, offsetY: t2y });
+    
+    if (sel.textContent.startsWith('Double')) {
+      const t2x = Number(t2xStr);
+      const t2y = Number(t2yStr);
+      if (Number.isFinite(t2x) && Number.isFinite(t2y)) {
+        BenchtopCanvas.setTaphole2({ offsetX: t2x, offsetY: t2y });
+      } else {
+        BenchtopCanvas.clearTaphole2();
+      }
     } else {
       BenchtopCanvas.clearTaphole2();
     }
-  } else {
-    BenchtopCanvas.clearTaphole2();
-  }
 
-  
-  BenchtopCanvas.setTapOrientation(sel.value);
+    
+    BenchtopCanvas.setTapOrientation(sel.value);
 
-  BenchtopCanvas.draw();
-  App.updateReport();
-
-  if (typeof updatePlacementButtons === 'function') {
-    updatePlacementButtons();
-  }
-});
+    BenchtopCanvas.draw();
+    App.updateReport();
+    if (typeof updatePlacementButtons === 'function') updatePlacementButtons();
+  };
 }
+
 
 export function getFienzaData() {
   return fienzaData;

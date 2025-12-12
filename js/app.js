@@ -1,5 +1,4 @@
 
-import { BenchtopCanvas, setCanvasHooks } from '../js/canvas.js';
 
 
 
@@ -237,10 +236,6 @@ export const App = {
     updatePlacementButtons();
   }
 };
-
-
-
-setCanvasHooks({ getWasteSize, onUpdateReport: updateReport });
 
 
 window.App = App;

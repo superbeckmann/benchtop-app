@@ -6,24 +6,24 @@
   <title>Benchtop Hole Positioning</title>
   <link rel="stylesheet" href="style.css?v=20251208-5">
 
-  <!-- Load Excel parser (SheetJS) -->
+  
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js?v=20251208-5"></script>
 </head>
 
 <body>
-  <!-- 🔑 Login screen -->
+  
   <div id="login">
     <h2>Enter Password</h2>
     <input type="password" id="password" placeholder="Password">
     <button id="submitBtn">Submit</button>
   </div>
 
-  <!-- 🔒 Protected content (your existing app) -->
+  
   <div id="protected" style="display:none;">
     <h1>The Workbench</h1>
 
     <div class="layout">
-      <!-- Left column: controls -->
+      
       <div class="left-column">
         <div class="panel">
           <h3>Benchtop Setup</h3>
@@ -76,7 +76,7 @@
         <div class="panel" id="manualHolePanel" style="display:none;">
           <h3>Manual Hole Positioning (mm)</h3>
 
-          <!-- Tap Hole -->
+          
           <fieldset class="hole-group">
             <legend>Tap Hole</legend>
             <div class="input-row">
@@ -88,7 +88,7 @@
             </div>
           </fieldset>
 
-          <!-- Waste Hole -->
+          
           <fieldset class="hole-group">
             <legend>Waste Hole</legend>
             <div class="input-row">
@@ -100,7 +100,7 @@
             </div>
           </fieldset>
 
-          <!-- Tap 2 Hole -->
+          
           <fieldset class="hole-group" id="tap2Fields" style="display:none;">
             <legend>Tap 2 Hole</legend>
             <div class="input-row">
@@ -112,7 +112,7 @@
             </div>
           </fieldset>
 
-          <!-- Waste 2 Hole -->
+          
           <fieldset class="hole-group" id="waste2Fields" style="display:none;">
             <legend>Waste 2 Hole</legend>
             <div class="input-row">
@@ -124,7 +124,7 @@
             </div>
           </fieldset>
 
-          <!-- Waste Hole Diameter -->
+          
           <div class="input-row">
             <label for="wasteSize">Waste Hole Diameter:</label>
             <select id="wasteSize">
@@ -135,7 +135,7 @@
             </select>
           </div>
 
-          <!-- Clear All -->
+          
           <div class="button-row">
             <button onclick="App.clearAll()">Clear All</button>
           </div>
@@ -145,7 +145,7 @@
         <div class="panel custom-basin-panel">
           <h3>Custom Basin (optional)</h3>
 
-          <!-- Shape selector -->
+          
           <div class="form-row">
             <label for="basinShape">Shape:</label>
             <select id="basinShape">
@@ -156,10 +156,10 @@
             </select>
           </div>
 
-          <!-- Basin size (injected dynamically) -->
+          
           <div id="basinSizeInputs" class="form-row" style="display: none;"></div>
 
-          <!-- Basin position (stacked layout) -->
+          
           <div id="basinPositionGroup" class="form-stack" style="display: none;">
             <div class="stack-row">
               <label for="basinX">Basin X:</label>
@@ -171,7 +171,7 @@
             </div>
           </div>
 
-          <!-- Corner radius -->
+          
           <div id="cornerRadiusFields" class="form-row" style="display: none;">
             <label for="cornerRadius">Corner radius (mm):</label>
             <input type="range" id="cornerRadius" min="0" max="100" step="1" value="0">
@@ -179,7 +179,7 @@
             <span id="cornerRadiusMaxLabel" class="max-label"></span>
           </div>
 
-          <!-- Clear button -->
+          
           <div class="button-row">
             <button onclick="App.clearBasin()">Clear Basin</button>
           </div>
@@ -191,16 +191,16 @@
         </div>
       </div>
 
-      <!-- Right column: canvas + report -->
+      
       <div class="right-column">
-        <!-- ✅ Export area wrapper -->
+        
         <div id="exportArea">
           <canvas id="benchtopCanvas" width="1000" height="300"></canvas>
           <div class="report" id="report"></div>
         </div>
       </div>
 
-      <!-- 🔑 Password gate script -->
+      
       <script>
         const PASSWORD = "letmein"; // change this to your demo password
 
@@ -215,14 +215,10 @@
         });
       </script>
 
-      <!-- Main app logic -->
+      
       <script type="module" src="./js/main.js?v=20251208-5"></script>
-      <script type="module" src="./js/fienza.js?v=20251208-5"></script>
-      <script type="module" src="./js/canvas.js?v=20251208-5"></script>
-      <script type="module" src="./js/app.js?v=20251208-5"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js?v=20251208-5"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js?v=20251208-5"></script>
-      <script type="module" src="./js/export.js?v=20251208-5"></script>
 </body>
 
 </html>

@@ -2,15 +2,49 @@
 
 
 import { App } from './app.js';
-import { BenchtopCanvas } from './canvas.js';
+import { BenchtopCanvas, setCanvasHooks } from './canvas.js';
 import { setHolesLocked } from './canvas.js';
 import {
   loadFienzaBasinsFromURL,
   getFienzaData,
   updateTapPositionOptions,
   placeFienzaHoles,
-  updateFienzaDropdown 
+  updateFienzaDropdown
 } from './fienza.js';
+import * as ExportTools from './export.js';
+
+
+
+
+
+
+setCanvasHooks({ getWasteSize: App.getWasteSize, onUpdateReport: App.updateReport });
+
+
+loadFienzaBasinsFromURL('./assets/fienza_basins.xlsx')
+  .then(() => {
+    updateFienzaDropdown();
+    
+    updateTapPositionOptions();
+  })
+  .catch(err => console.error('Failed to load basins:', err));
+
+
+function updateAndPlaceFienza() {
+  const data = getFienzaData();
+  if (!data || data.length === 0) return;
+  placeFienzaHoles(data);
+}
+
+
+
+
+window.App = App;
+window.BenchtopCanvas = BenchtopCanvas;
+window.ExportTools = ExportTools;
+
+
+
 
 document.addEventListener('DOMContentLoaded', () => {
   
@@ -34,12 +68,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const cornerRadiusSlider = document.getElementById('cornerRadius');
   const cornerRadiusValue = document.getElementById('cornerRadiusValue');
 
+    tapPosition?.addEventListener('change', () => {
+    placeFienzaHoles(App, updatePlacementButtons);
+  });
+
   function isDoubleModeActive() {
     
     const checkbox = document.getElementById('doubleModeCheckbox');
     return checkbox && checkbox.checked;
   }
-
     
   
   
@@ -297,6 +334,7 @@ placeWaste2Btn.addEventListener('click', () => {
 
 loadFienzaBasinsFromURL('./assets/fienza_basins.xlsx');
 
+
 fienzaSelect.addEventListener('change', () => {
   const code = fienzaSelect.value;
   const match = getFienzaData().find(row => row['Item Code'] === code);
@@ -306,16 +344,32 @@ fienzaSelect.addEventListener('change', () => {
 
 
 tapPosition.addEventListener('change', () => {
-  const pos = tapPosition.value; 
+  placeFienzaHoles(App, updatePlacementButtons, doubleMode.checked);
+});
+
+const tapSelect = document.getElementById('tapPosition');
+if (tapSelect) {
+  tapSelect.innerHTML = '';
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = 'Select position';
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  tapSelect.appendChild(placeholder);
+}
+
+
+function onTapPositionChange() {
+  const pos = tapPosition.value;
   console.log('tapPosition changed ->', pos);
 
-  
   BenchtopCanvas.setTapOrientation(pos);
-
-  
   placeFienzaHoles(App, updatePlacementButtons, doubleMode.checked);
   updatePlacementButtons();
-});
+}
+
+tapPosition.addEventListener('change', onTapPositionChange);
+
 
 
   
@@ -417,6 +471,7 @@ basinShape.addEventListener('change', e => {
       BenchtopCanvas.draw();
       App.updateReport();
       updatePlacementButtons();
+      
     });
   });
   

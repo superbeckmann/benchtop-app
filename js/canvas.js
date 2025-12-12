@@ -42,8 +42,13 @@ function ensureCanvas() {
   if (!canvas) {
     canvas = document.getElementById('benchtopCanvas');
     ctx = canvas?.getContext('2d');
+
+    
+    
+    
   }
 }
+
 
 
 
@@ -164,24 +169,34 @@ function draw() {
   const y0 = 20;
 
   
+  
+  
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 1;
   ctx.strokeRect(x0, y0, widthPx, heightPx);
 
   
+  
+  
   ctx.strokeStyle = '#aaa';
   ctx.setLineDash([4, 4]);
+
+  
   ctx.beginPath();
   ctx.moveTo(x0, y0 + heightPx / 2);
   ctx.lineTo(x0 + widthPx, y0 + heightPx / 2);
   ctx.stroke();
 
+  
   ctx.beginPath();
   ctx.moveTo(x0 + widthPx / 2, y0);
   ctx.lineTo(x0 + widthPx / 2, y0 + heightPx);
   ctx.stroke();
+
   ctx.setLineDash([]);
 
+  
+  
   
   ctx.beginPath();
   ctx.arc(x0 + widthPx / 2, y0 + heightPx / 2, 3, 0, 2 * Math.PI);
@@ -189,26 +204,43 @@ function draw() {
   ctx.fill();
 
   
+  
+  
   if (taphole) drawHole(taphole, 'blue', 'T', 35, x0, y0, widthPx);
   if (wastehole) drawHole(wastehole, 'green', 'W', getWasteSizeHook(), x0, y0, widthPx);
 
+  
+  
   
   if (taphole1) drawHole(taphole1, 'blue', 'T1', 35, x0, y0, widthPx);
   if (taphole2) drawHole(taphole2, 'red', 'T2', 35, x0, y0, widthPx);
   if (wastehole1) drawHole(wastehole1, 'green', 'W1', getWasteSizeHook(), x0, y0, widthPx);
   if (wastehole2) drawHole(wastehole2, 'orange', 'W2', getWasteSizeHook(), x0, y0, widthPx);
 
+  
+  
+  
   if (basin) drawBasin(basin, x0, y0, widthPx);
-  if (cutout) drawCutout(cutout, x0, y0, widthPx);
 
   
+  
+  
+  if (cutout) {
+    drawCutout(cutout, x0, y0, widthPx);
+  }
+  
+  
+  
   drawLegend();
+
 
   
   
   
   const showArrow = document.getElementById('showMeasurementArrow')?.checked;
   if (showArrow) {
+    ctx.save();   
+
     const baseX = x0 + widthPx / 2; 
     const baseY = y0;               
 
@@ -227,7 +259,7 @@ function draw() {
       const holeY = baseY + mmToPx(h.offsetY);
 
       
-      ctx.strokeStyle = h.color || '#000'; 
+      ctx.strokeStyle = h.color || '#000';
       ctx.lineWidth = 2;
 
       ctx.beginPath();
@@ -263,7 +295,10 @@ function draw() {
       ctx.textBaseline = 'top';
       ctx.fillText(`${offsetXmm} mm (centerline)`, midX, holeY + 16);
     }
+
+    ctx.restore();   
   }
+
 }
 
 
@@ -328,75 +363,61 @@ function drawRoundedRect(ctx, x, y, w, h, r) {
 }
 
 function drawCutout(c, x0, y0, widthPx) {
-  const baseX = x0 + widthPx / 2;
-  const baseY = y0;
+  if (!c) return;
 
-  
-  let cx, cy, usedBranch;
-  if (selectedTapOrientation === '12' && Number.isFinite(c.pos12?.x) && Number.isFinite(c.pos12?.y)) {
-    cx = baseX + mmToPx(c.pos12.x);
-    cy = baseY + mmToPx(c.pos12.y);
-    usedBranch = 'pos12';
-  } else if (selectedTapOrientation === '10' && Number.isFinite(c.pos10?.x) && Number.isFinite(c.pos10?.y)) {
-    cx = baseX + mmToPx(c.pos10.x);
-    cy = baseY + mmToPx(c.pos10.y);
-    usedBranch = 'pos10';
-  } else if (selectedTapOrientation === '2' && Number.isFinite(c.pos2?.x) && Number.isFinite(c.pos2?.y)) {
-    cx = baseX + mmToPx(c.pos2.x);
-    cy = baseY + mmToPx(c.pos2.y);
-    usedBranch = 'pos2';
-  } else {
-    const genX = c.offsetX ?? c.c_x ?? c.cx ?? 0;
-    const genY = c.offsetY ?? c.c_y ?? c.cy ?? 0;
-    cx = baseX + mmToPx(genX);
-    cy = baseY + mmToPx(genY);
-    usedBranch = 'generic';
-  }
-
-  
-const fromCenterMM = (cx - baseX) / mmToPx(1);
-const fromBackMM   = (cy - baseY) / mmToPx(1);
-
-  BenchtopCanvas.state.cutoutPlacement = {
-    orientation: selectedTapOrientation,
-    branch: usedBranch,
-    cxPx: cx,
-    cyPx: cy,
-    fromCenterMM,
-    fromBackMM,
-    widthMM: Number.isFinite(c.width) ? c.width : null,
-    lengthMM: Number.isFinite(c.length) ? c.length : null,
-    diameterMM: (c.shape === 'circle' && Number.isFinite(c.length)) ? c.length : null,
-    cornerRadiusMM: Number.isFinite(c.cornerRadius) ? c.cornerRadius : null
-  };
-
-  console.log('drawCutout placement:', BenchtopCanvas.state.cutoutPlacement);
+  const baseX = x0 + widthPx / 2; 
+  const baseY = y0;               
 
   ctx.save();
   ctx.strokeStyle = 'orange';
-  ctx.lineWidth = 2;
-  ctx.setLineDash([6, 4]);
+  ctx.lineWidth = 3;
+  ctx.setLineDash([8, 6]);
 
-  if (c.shape === 'circle' && Number.isFinite(c.length)) {
-    const rPx = mmToPx(c.length) / 2;
-    ctx.beginPath();
-    ctx.arc(cx, cy, rPx, 0, Math.PI * 2);
-    ctx.stroke();
-  } else if ((c.shape === 'square' || c.shape === 'rect') &&
-             Number.isFinite(c.width) && Number.isFinite(c.length)) {
+  
+  function drawOneCutout(offsetXmm, offsetYmm) {
+    if (!Number.isFinite(offsetXmm) || !Number.isFinite(offsetYmm)) return;
+
+    const cx = baseX + mmToPx(offsetXmm);
+    const cy = baseY + mmToPx(offsetYmm);
+
     const wPx = mmToPx(c.width);
     const lPx = mmToPx(c.length);
-    if (c.cornerRadius && c.cornerRadius > 0 && ctx.roundRect) {
+    const rPx = mmToPx(c.cornerRadius || 0);
+
+    const x = cx - wPx / 2;
+    const y = cy - lPx / 2;
+
+    if (rPx > 0) {
+      
+      const r = Math.min(rPx, wPx / 2, lPx / 2);
       ctx.beginPath();
-      ctx.roundRect(cx - wPx / 2, cy - lPx / 2, wPx, lPx, mmToPx(c.cornerRadius));
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + wPx - r, y);
+      ctx.quadraticCurveTo(x + wPx, y, x + wPx, y + r);
+      ctx.lineTo(x + wPx, y + lPx - r);
+      ctx.quadraticCurveTo(x + wPx, y + lPx, x + wPx - r, y + lPx);
+      ctx.lineTo(x + r, y + lPx);
+      ctx.quadraticCurveTo(x, y + lPx, x, y + lPx - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
       ctx.stroke();
     } else {
-      ctx.strokeRect(cx - wPx / 2, cy - lPx / 2, wPx, lPx);
+      
+      ctx.strokeRect(x, y, wPx, lPx);
     }
   }
 
+  
+  drawOneCutout(c.primary_x, c.primary_y);
+
+  
+  drawOneCutout(c.secondary_x, c.secondary_y);
+
   ctx.restore();
 }
+
+
 
 
 
@@ -514,7 +535,6 @@ function handleDrag(x, y, x0, y0, widthPx) {
       }
     }
   }
-
   draw();
   onUpdateReportHook();
   updateInputs();
@@ -561,14 +581,18 @@ function handleClick(x, y) {
 
 function getExistingHoles() {
   const holes = [];
-  if (taphole) holes.push(taphole);
-  if (wastehole) holes.push(wastehole);
+
+  
   if (taphole1) holes.push(taphole1);
-  if (taphole2) holes.push(taphole2);
   if (wastehole1) holes.push(wastehole1);
+
+  
+  if (taphole2) holes.push(taphole2);
   if (wastehole2) holes.push(wastehole2);
+
   return holes;
 }
+
 
 
 
@@ -681,16 +705,48 @@ function getReport() {
     lines.push(basinLine);
   }
 
-  if (cutout) {
-    const p = BenchtopCanvas.state?.cutoutPlacement;
-    if (p) {
-      const dims = p.diameterMM ? `Ø${p.diameterMM}mm`
-        : (p.widthMM && p.lengthMM ? `${p.lengthMM}mm × ${p.widthMM}mm` : `Cut-out`);
-      const fromCenter = typeof p.fromCenterMM === 'number' ? `${p.fromCenterMM}mm from center` : '—';
-      const fromBack = typeof p.fromBackMM === 'number' ? `${p.fromBackMM}mm from back` : '—';
-      lines.push(`Cut-out: ${dims}, ${fromCenter}, ${fromBack}`);
-    }
+
+
+
+if (cutout) {
+  const c = cutout; 
+
+  
+  let dims = '';
+  if (c.shape === 'round' || c.diameter) {
+    dims = `Ø${c.diameter}mm`;
+  } else if (c.shape === 'square' || c.shape === 'rect') {
+    dims = `${c.length}mm × ${c.width}mm`;
+    if (c.cornerRadius) dims += `, corner radius ${c.cornerRadius}mm`;
+  } else {
+    dims = 'Cut-out';
   }
+
+  
+  const side = c.primary_x < 0 ? 'LEFT' : (c.primary_x > 0 ? 'RIGHT' : 'center');
+  const sideText = c.primary_x === 0
+    ? `0mm from benchtop center`
+    : `${Math.abs(c.primary_x)}mm ${side} of benchtop center`;
+
+  const backText = `${c.primary_y}mm from back`;
+
+  
+  let orient = document.getElementById('tapPosition')?.value;
+
+  if (!orient) {
+    
+    orient = 'Not selected';
+  } else if (orient === 'nth') {
+    
+    orient = 'No tap hole';
+  } else {
+    
+    orient = `${orient} o’clock`;
+  }
+
+  lines.push(`Cut-out: ${dims}. Position: ${sideText}, ${backText}. Orientation: ${orient}.`);
+
+}
 
   return lines.join('\n');
 }
@@ -768,32 +824,32 @@ export const BenchtopCanvas = {
   hasBasin() { return !!basin; },
 
   
-  setCutout(obj) {
-    cutout = {
-      shape: obj.shape || 'rect',
-      length: Number(obj.length) || null,
-      width: Number(obj.width) || null,
-      diameter: Number(obj.diameter) || null,
-      cornerRadius: Number(obj.cornerRadius) || 0,
-      offsetX: Number(obj.offsetX) || 0,
-      offsetY: Number(obj.offsetY) || 0,
-      pos12: {
-        x: obj['12_c_x'] != null ? Number(obj['12_c_x']) : null,
-        y: obj['12_c_y'] != null ? Number(obj['12_c_y']) : null
-      },
-      pos10: {
-        x: obj['10_c_x'] != null ? Number(obj['10_c_x']) : null,
-        y: obj['10_c_y'] != null ? Number(obj['10_c_y']) : null
-      },
-      pos2: {
-        x: obj['2_c_x'] != null ? Number(obj['2_c_x']) : null,
-        y: obj['2_c_y'] != null ? Number(obj['2_c_y']) : null
-      }
-    };
-    draw(); onUpdateReportHook();
+  
+  
+  setCutout(c) {
+    console.log("Cutout fields used:", c);
+    console.log("Cutout orientation debug:", {
+      primary_x: c.primary_x,
+      primary_y: c.primary_y,
+      secondary_x: c.secondary_x,
+      secondary_y: c.secondary_y
+    });
+
+    cutout = c;              
+    draw();
+    onUpdateReportHook();
   },
-  clearCutout() { cutout = null; draw(); onUpdateReportHook(); },
-  hasCutout() { return !!cutout; },
+
+  clearCutout() {
+    cutout = null;           
+    draw();
+    onUpdateReportHook();
+  },
+
+  hasCutout() {
+    return !!cutout;
+  },
+
 
   
   setPlacementMode(mode) { placementMode = mode; },
